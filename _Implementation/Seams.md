@@ -1,0 +1,4 @@
+- **No workspace persistence.** Rebooting discards the spatial arrangement of work. Restoring it is manual.
+- **No unified graph.** Relationships between open views exist only in the user's head.
+- **Application boundaries.** VSCode is a monolith; it cannot be decomposed into thin views. The browser is its own world. File manager, terminal, and editor are bridged by custom hotkeys, not by shared awareness of context.
+- **niri's model diverges.** niri provides N independent horizontal strips. The mental model is more like one 2D canvas with a viewport. "Down" in niri means "switch strip"; the desired meaning is "pan the viewport down on the same surface."

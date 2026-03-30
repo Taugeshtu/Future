@@ -1,0 +1,3 @@
+Web sockets and ports are "I promise I'll communicate at this address with an agreed-upon schema" — which is exactly what protocols _are_. FTP, IMAP, HTTP, the lot. The web figured this out. Desktop never cared.
+The ports-contract model may allow offering the user not just immediately compatible things, but things that _can be made compatible_ via an intermediate step. **Converters are kings — and they're composable.**
+The ports model lets users build different toolboxes for the same data type. Apps already overlap in functionality — in Future, this overlap is explicit, and the user curates which tools are arranged around which content.

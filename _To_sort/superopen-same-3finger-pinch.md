@@ -1,0 +1,3 @@
+Super-open: same as 3-finger pinch can be zoom-out, it can also be a zoom-in. When looking at a folder, "zoom-in" can "lift" all the files in it! Or like, the 10-15 most recent ones?.. This would be sweet with a folder with a bunch of small files.
+
+OH! This can alternatively spawn like... a multi-file preview?.. Which in itself is just a strategy to reuse views for files; and!! the "prefix" (context supplier) for that preview is "chunkify" of the full list of files! So you can scrobble through a bunch of your files, at once, and have previews for them. Nice!

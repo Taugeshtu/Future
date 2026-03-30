@@ -1,0 +1,1 @@
+Finding myself not wanting to open the text files because that's gonna bring in the whole-ass vscode.. Am I actually escaping the clutches of vscode and leaking into the system at large? :D

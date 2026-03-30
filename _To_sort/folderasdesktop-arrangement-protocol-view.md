@@ -1,0 +1,2 @@
+**Folder-as-desktop + `.arrangement` protocol**
+The "view into a folder as the desktop background with persistent file positioning" concept integrates seamlessly with the infinite smart canvas dream. As soon as WM supports drawing (pen/touch) into it and persisting that — massive. Spatial metadata lives in a `.arrangement` dot-folder, just files. A protocol of persistence of spatial arrangement. Survivable and local. If missing: no overrides, render normally.

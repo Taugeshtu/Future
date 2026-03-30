@@ -1,0 +1,1 @@
+- Mouse-select in text should probably always snap to word boundaries. Shift+arrows gives precision when you need it. Mouse selection is almost always a copy operation — word granularity is the right default.

@@ -1,0 +1,2 @@
+**View state history / recall thumbnails**
+WM knows the context of each opened view, so it can serialize the strip's view state somewhere — and that IS the visual history of work. Pixelated miniature renderings as thumbnails for sane recall/navigation. Much later feature.

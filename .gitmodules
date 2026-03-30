@@ -1,0 +1,7 @@
+[submodule "TO-DAY"]
+	path = TO-DAY
+	url = git@github.com:Taugeshtu/TO-DAY.git
+
+[submodule "Kelp"]
+	path = Kelp
+	url = git@github.com:Taugeshtu/kelp.git
