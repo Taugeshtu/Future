@@ -12,7 +12,16 @@ pub fn open_files_bypass_self(paths: &[PathBuf]) {
 }
 
 fn open_file_bypass_self(path: &PathBuf) {
-    let (content_type, _) = gio::content_type_guess(Some(path), &[]);
+    // Pass real file bytes so GIO doesn't mistake the file for application/x-zerosize.
+    // &[] with length 0 is treated by GLib as "data present but empty" → wrong type.
+    let sniff_data: Vec<u8> = {
+        use std::io::Read;
+        let mut buf = [0u8; 512];
+        std::fs::File::open(path)
+            .and_then(|mut f| f.read(&mut buf).map(|n| buf[..n].to_vec()))
+            .unwrap_or_default()
+    };
+    let (content_type, _) = gio::content_type_guess(Some(path), &sniff_data);
 
     let handler = gio::AppInfo::all_for_type(&content_type)
         .into_iter()
