@@ -64,3 +64,7 @@ A traditional launcher (rofi, fuzzel) is verb-first. This launcher supersedes it
 - `/url` → straight to browser address bar (browser autocomplete in-launcher would be ideal but may not be feasible).
 
 **Folder pinning.** Best case: pin folders in the file manager, launcher reads from there.
+
+**Note-taker mode:**
+- Snap a screenshot (and later: grab the active URL or file path) when making a note — attach it as a "source" of the thinking. Passive context capture.
+
