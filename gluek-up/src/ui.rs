@@ -127,26 +127,42 @@ pub fn run(matches: Vec<MatchItem>, is_refs: bool) {
         let listbox = gtk4::ListBox::new();
         listbox.set_selection_mode(gtk4::SelectionMode::Single);
         
-        for item in &matches {
+        if matches.is_empty() {
             let row_box = gtk4::Box::new(gtk4::Orientation::Vertical, 2);
             row_box.add_css_class("match-item");
             
-            let label_title = gtk4::Label::new(Some(&item.label));
+            let label_title = gtk4::Label::new(Some("Nothing found, sorry"));
             label_title.set_halign(gtk4::Align::Start);
-            label_title.set_ellipsize(gtk4::pango::EllipsizeMode::End);
             
-            let path = Path::new(&item.file_path);
-            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or(&item.file_path);
-            
-            let label_sub = gtk4::Label::new(Some(&format!("{}:{}  -  {}", file_name, item.line, item.snippet.trim())));
+            let label_sub = gtk4::Label::new(Some("No definition or reference matches resolved."));
             label_sub.set_halign(gtk4::Align::Start);
             label_sub.set_opacity(0.6);
-            label_sub.set_ellipsize(gtk4::pango::EllipsizeMode::End);
             
             row_box.append(&label_title);
             row_box.append(&label_sub);
-            
             listbox.append(&row_box);
+        } else {
+            for item in &matches {
+                let row_box = gtk4::Box::new(gtk4::Orientation::Vertical, 2);
+                row_box.add_css_class("match-item");
+                
+                let label_title = gtk4::Label::new(Some(&item.label));
+                label_title.set_halign(gtk4::Align::Start);
+                label_title.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+                
+                let path = Path::new(&item.file_path);
+                let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or(&item.file_path);
+                
+                let label_sub = gtk4::Label::new(Some(&format!("{}:{}  -  {}", file_name, item.line, item.snippet.trim())));
+                label_sub.set_halign(gtk4::Align::Start);
+                label_sub.set_opacity(0.6);
+                label_sub.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+                
+                row_box.append(&label_title);
+                row_box.append(&label_sub);
+                
+                listbox.append(&row_box);
+            }
         }
         
         list_scroll.set_child(Some(&listbox));
@@ -166,6 +182,10 @@ pub fn run(matches: Vec<MatchItem>, is_refs: bool) {
         
         preview_scroll.set_child(Some(&view_preview));
         paned.set_end_child(Some(&preview_scroll));
+        
+        if matches.is_empty() {
+            view_preview.buffer().set_text("Verify that the lsp-broker is running and the command configured is available.\n\nFor Markdown files, make sure 'markdown-oxide' or 'marksman' is installed and configured in ~/.config/lsp-broker/config.toml.");
+        }
         
         root_box.append(&paned);
         window.set_child(Some(&root_box));
