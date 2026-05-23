@@ -2,6 +2,37 @@
 local core = require "core"
 local Doc = require "core.doc"
 
+-- Hook open_doc to support file:line:col argument opening
+local original_open_doc = core.open_doc
+function core.open_doc(filename)
+  if not filename then return original_open_doc(filename) end
+  local path, line, col = filename:match("^(.+):(%d+):(%d+)$")
+  if not path then
+    path, line = filename:match("^(.+):(%d+)$")
+  end
+  if path then
+    local doc = original_open_doc(path)
+    if doc then
+      line = tonumber(line)
+      col = tonumber(col) or 1
+      doc:set_selection(line, col, line, col)
+      core.add_thread(function()
+        for i = 1, 5 do coroutine.yield() end
+        for _, view in ipairs(core.root_view:get_views()) do
+          if view.doc == doc then
+            if view.scroll_to_caret then
+              view:scroll_to_caret()
+            end
+            break
+          end
+        end
+      end)
+      return doc
+    end
+  end
+  return original_open_doc(filename)
+end
+
 -- Get the exact editor process PID using FFI (with PPID fallback)
 local pid = nil
 local has_ffi, ffi = pcall(require, "ffi")
