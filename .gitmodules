@@ -8,3 +8,6 @@
 [submodule "crunchie-apps"]
 	path = crunchie-apps
 	url = git@github.com:Taugeshtu/crunchie-apps.git
+[submodule "lsp-broker"]
+	path = lsp-broker
+	url = git@github.com:Taugeshtu/lsp-broker.git
