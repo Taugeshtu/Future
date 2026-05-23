@@ -37,6 +37,29 @@ pub struct MatchItem {
     pub snippet: String,    // line preview
 }
 
+fn percent_decode(s: &str) -> String {
+    let mut bytes = Vec::new();
+    let mut bytes_iter = s.as_bytes().iter();
+    while let Some(&b) = bytes_iter.next() {
+        if b == b'%' {
+            let h1 = bytes_iter.next().copied();
+            let h2 = bytes_iter.next().copied();
+            if let (Some(h1), Some(h2)) = (h1, h2) {
+                if let Ok(val) = u8::from_str_radix(std::str::from_utf8(&[h1, h2]).unwrap_or("00"), 16) {
+                    bytes.push(val);
+                    continue;
+                }
+            }
+            bytes.push(b'%');
+            if let Some(x) = h1 { bytes.push(x); }
+            if let Some(x) = h2 { bytes.push(x); }
+        } else {
+            bytes.push(b);
+        }
+    }
+    String::from_utf8(bytes).unwrap_or_else(|_| s.to_string())
+}
+
 fn fetch_context() -> Result<ContextResponse, Box<dyn std::error::Error>> {
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
         .unwrap_or_else(|_| "/run/user/1000".to_string());
@@ -175,7 +198,8 @@ fn fetch_broker_matches(
     
     let mut matches = Vec::new();
     for (uri, start_line, start_col) in locations {
-        let file_path = uri.trim_start_matches("file://").to_string();
+        let raw_path = uri.trim_start_matches("file://");
+        let file_path = percent_decode(raw_path);
         let snippet = get_file_line(&file_path, start_line).unwrap_or_default();
         let file_name = Path::new(&file_path)
             .file_name()

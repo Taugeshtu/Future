@@ -21,7 +21,7 @@ This produces `~/.local/bin/current`.
 
 ### making it run automatically on your system
 The best way to run Current is as a user systemd service.
-Write the following into `~/.config/systemd/user/current.service` (or symlink the provided [current.service](file:///media/veracrypt1/_PROJECTS/_Future/Current/current.service)):
+Write the following into `~/.config/systemd/user/current.service`:
 
 ```ini
 [Unit]
