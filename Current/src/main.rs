@@ -41,6 +41,7 @@ enum Request {
 struct NiriWindow {
     pid: Option<u32>,
     app_id: Option<String>,
+    title: Option<String>,
 }
 
 type Cache = Arc<Mutex<HashMap<u32, Attention>>>;
@@ -61,9 +62,19 @@ async fn get_focused_window() -> Option<NiriWindow> {
 
 fn prune_cache(cache: &mut HashMap<u32, Attention>) {
     cache.retain(|pid, _| {
-        // Under Linux, /proc/{pid} exists if the process is alive
         Path::new(&format!("/proc/{}", pid)).exists()
     });
+}
+
+fn extract_pid_from_title(title: &str) -> Option<u32> {
+    if let Some(start_idx) = title.rfind("[PID: ") {
+        let remainder = &title[start_idx + 6..];
+        if let Some(end_idx) = remainder.find(']') {
+            let pid_str = &remainder[..end_idx];
+            return pid_str.trim().parse::<u32>().ok();
+        }
+    }
+    None
 }
 
 async fn handle_client(mut stream: UnixStream, cache: Cache) -> Result<(), Box<dyn std::error::Error>> {
@@ -104,7 +115,16 @@ async fn handle_client(mut stream: UnixStream, cache: Cache) -> Result<(), Box<d
             let mut attention = None;
 
             if let Some(ref win) = window {
-                if let Some(pid) = win.pid {
+                let mut resolved_pid = win.pid;
+
+                // Try to extract PID from window title (resolves XWayland proxy PID mismatch)
+                if let Some(ref title) = win.title {
+                    if let Some(extracted_pid) = extract_pid_from_title(title) {
+                        resolved_pid = Some(extracted_pid);
+                    }
+                }
+
+                if let Some(pid) = resolved_pid {
                     let mut lock = cache.lock().await;
                     prune_cache(&mut lock);
                     if let Some(att) = lock.get(&pid) {
@@ -132,13 +152,11 @@ async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|_| "/run/user/1000".to_string());
     let socket_path = Path::new(&runtime_dir).join("current.sock");
 
-    // Clean up existing socket if any
     if socket_path.exists() {
         let _ = std::fs::remove_file(&socket_path);
     }
 
     let listener = UnixListener::bind(&socket_path)?;
-    // Ensure only the owner can read/write
     let mut permissions = std::fs::metadata(&socket_path)?.permissions();
     #[cfg(unix)]
     {
@@ -192,7 +210,6 @@ async fn run_client(command: &str) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
             }
-            // Fail: exit with 1, stdout is empty
             std::process::exit(1);
         }
         "location" => {
@@ -204,7 +221,6 @@ async fn run_client(command: &str) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            // Fallback: print home directory and succeed
             println!("{}", home_dir);
         }
         _ => {
