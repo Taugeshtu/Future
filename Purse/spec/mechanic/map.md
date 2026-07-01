@@ -26,7 +26,6 @@ Cargo.toml              workspace manifest; members = ["purse", "purse-niri"]
 
 | File | Responsibility | Concept ref |
 |------|---------------|-------------|
-| `main.rs` | Entry point: arg parsing, orchestrate resolution and forwarding/spawn | [[concept/lifecycle#purse-niri-invocation-path]] |
+| `main.rs` | Entry point: spawn/locate instance and print target PID | [[concept/lifecycle#purse-niri-invocation-path]] |
 | `niri.rs` | Niri IPC client: connect, query workspaces + windows | [[concept/purse-niri#niri-ipc-client]] |
-| `resolution.rs` | Decision tree: find existing Purse on focused workspace, or decide to spawn | [[concept/purse-niri#instance-resolution]] |
-| `forward.rs` | Socket client: connect to existing Purse, write file paths | [[concept/purse-niri#file-forwarding]] |
+| `resolution.rs` | Decision tree: find existing Purse on focused workspace, or decide to spawn | [[concept/purse-niri#instance-resolution-and-pid-output]] |

@@ -118,6 +118,8 @@ fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
 
     // --- IPC server ---
     ipc::spawn_server(ipc_tx);
+    println!("READY");
+    let _ = std::io::Write::flush(&mut std::io::stdout());
 
     // --- ingest initial files from argv ---
     for path in initial_paths {

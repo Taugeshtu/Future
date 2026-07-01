@@ -3,17 +3,17 @@
 ## `purse-niri` invocation path
 
 ```
-Thunar custom action fires with file list
+Caller (script/action) invokes purse-niri
         │
         ▼
 purse-niri queries Niri IPC
         │
-        ├── purse on this workspace → send files to socket → exit
+        ├── purse on focused workspace → output existing PID to stdout → exit
         │
-        └── no purse here → spawn `purse [files...]` → exit
+        └── no purse here → spawn `purse` → output new child PID to stdout → exit
 ```
 
-`purse-niri` is always short-lived. It resolves and exits.
+`purse-niri` is always short-lived. It resolves, prints PID, and exits.
 
 ## `purse` window lifetime
 
@@ -46,9 +46,8 @@ release socket → exit
 
 | Point | Who | What |
 |-------|-----|-------|
-| Thunar custom action | `purse-niri` | invoked with file paths as argv |
+| Command / Script | `purse-niri` | invoked to find or spawn instance, returns PID |
 | Niri IPC | `purse-niri` | workspace + window query |
-| Unix socket (server) | `purse` | receives file paths from any sender |
-| Unix socket (client) | `purse-niri` | forwards file paths to existing instance |
+| Unix socket (server) | `purse` | receives file paths/coordinates from any sender |
 | Wayland DnD | `purse` | GTK4 DropTarget on the grid |
 | Dispatch / launcher | `purse` | hands off selected file list (mechanism TBD) |

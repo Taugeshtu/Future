@@ -1,39 +1,36 @@
-mod forward;
 mod niri;
 mod resolution;
-
-use std::path::PathBuf;
 
 use niri::NiriState;
 use resolution::Resolution;
 
 fn main() {
-    let paths: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
-
-    if paths.is_empty() {
-        eprintln!("purse-niri: no files given");
-        std::process::exit(1);
-    }
-
     let niri_state = niri::query().unwrap_or_else(|_| NiriState {
         focused_workspace_id: None,
         purse_windows: vec![],
     });
 
-    match resolution::resolve(&niri_state) {
-        Resolution::Forward { pid } => {
-            if let Err(e) = forward::forward(pid, &paths) {
-                eprintln!("purse-niri: forward failed: {e}, spawning new instance");
-                spawn(&paths);
-            }
-        }
-        Resolution::Spawn => spawn(&paths),
-    }
+    let pid = match resolution::resolve(&niri_state) {
+        Resolution::Forward { pid } => pid,
+        Resolution::Spawn => spawn(),
+    };
+    println!("{}", pid);
 }
 
-fn spawn(paths: &[PathBuf]) {
+fn spawn() -> u32 {
+    use std::io::Read;
+    use std::process::Stdio;
+
     let mut cmd = std::process::Command::new("purse");
-    cmd.args(paths);
-    cmd.spawn().expect("failed to spawn purse");
-    // detach: don't wait on the child
+    cmd.stdout(Stdio::piped());
+    let mut child = cmd.spawn().expect("failed to spawn purse");
+
+    if let Some(mut stdout) = child.stdout.take() {
+        let mut buf = [0u8; 5];
+        if stdout.read_exact(&mut buf).is_err() {
+            eprintln!("purse-niri: child failed to signal readiness");
+            std::process::exit(1);
+        }
+    }
+    child.id()
 }

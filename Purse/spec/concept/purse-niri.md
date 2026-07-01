@@ -6,7 +6,7 @@ Connects to Niri's socket (`$NIRI_SOCKET` or default path) and queries:
 - The currently focused workspace
 - The list of windows on that workspace (app-id, PID, workspace membership)
 
-## Instance resolution
+## Instance resolution and PID output
 
 Given the query results:
 
@@ -17,27 +17,23 @@ focused workspace known
     │       │
     │       └── locate its socket: $XDG_RUNTIME_DIR/purse-{pid}.sock
     │               │
-    │               ├── socket reachable → forward files → exit
+    │               ├── socket reachable → output PID to stdout → exit
     │               └── socket not reachable → treat as absent (stale)
     │
     └── no purse window on this workspace
             │
-            └── spawn `purse` with files as argv → exit
+            └── spawn `purse` (no arguments) → output child PID to stdout → exit
 ```
 
 Stale socket (window listed by Niri but socket gone) is treated as absent: spawn fresh.
 
-## File forwarding
-
-Writes newline-delimited file paths to the target socket, then exits.
-No persistent connection. Fire and forget.
-
 ## Invocation contract
 
-Called by Thunar custom action (or anything else) with file paths as arguments:
+Called without arguments. Outputs the target Purse's PID to stdout:
 
 ```
-purse-niri /path/to/file1 /path/to/file2 ...
+$ purse-niri
+41235
 ```
 
-Exits immediately after forwarding or spawning. Does not stay resident.
+Caller is responsible for connecting to `$XDG_RUNTIME_DIR/purse-{pid}.sock` and writing file paths.
