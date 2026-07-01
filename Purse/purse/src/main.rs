@@ -121,6 +121,20 @@ fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
     println!("READY");
     let _ = std::io::Write::flush(&mut std::io::stdout());
 
+    #[cfg(unix)]
+    unsafe {
+        extern "C" {
+            fn open(pathname: *const u8, flags: i32) -> i32;
+            fn dup2(oldfd: i32, newfd: i32) -> i32;
+            fn close(fd: i32) -> i32;
+        }
+        let fd = open(b"/dev/null\0".as_ptr(), 1); // 1 is O_WRONLY
+        if fd >= 0 {
+            dup2(fd, 1);
+            close(fd);
+        }
+    }
+
     // --- ingest initial files from argv ---
     for path in initial_paths {
         ingestion::ingest(path, &state, &cell_map, &flow_box, preview_tx.clone());

@@ -127,7 +127,13 @@ local function publish_context()
   local json_str = json_encode(payload)
   -- Use sh -c 'echo "payload" | nc -U "socket"' so the pipe is parsed correctly
   local cmd = string.format("sh -c 'echo %q | nc -U %q >/dev/null 2>&1'", json_str, socket_path)
-  system.exec(cmd)
+  if system.exec then
+    system.exec(cmd)
+  elseif process and process.start then
+    process.start({ "sh", "-c", cmd })
+  else
+    os.execute(cmd .. " &")
+  end
 end
 
 -- Throttling thread (wakes up every 100ms to publish if needed)
@@ -135,7 +141,10 @@ local needs_publish = true -- Publish on startup
 core.add_thread(function()
   while true do
     if needs_publish then
-      pcall(publish_context)
+      local ok, err = pcall(publish_context)
+      if not ok then
+        core.log("[Current Error]: %s", tostring(err))
+      end
       needs_publish = false
     end
     coroutine.yield(0.1) -- Throttle to max 10 updates per second
