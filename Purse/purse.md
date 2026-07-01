@@ -51,6 +51,21 @@ The selection state in Purse is the declared context. When the [[launcher]] is e
 
 ---
 
+## Configuration
+
+Purse reads explicit file associations from `~/.config/purse/associations.conf` (or `$XDG_CONFIG_HOME/purse/associations.conf`).
+
+Format is simple key-value:
+```ini
+image/png = imv-dir.desktop
+image/jpeg = imv-dir.desktop
+text/plain = org.lite_xl.lite_xl.desktop
+```
+
+If a MIME type is matched, Purse launches the specified desktop application. If not matched, it falls back to GIO/GLib's recommended application list, or `xdg-open` as a last resort.
+
+---
+
 ## Multiple Purses = multiple contexts
 
 Multiple Purse windows can coexist on the same workspace. Each is an independent context bundle.

@@ -20,6 +20,7 @@ use item_cell::ItemCell;
 use state::{ItemId, PurseState};
 
 fn main() {
+    dispatch::init();
     let initial_paths: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
 
     let app = gtk4::Application::new(

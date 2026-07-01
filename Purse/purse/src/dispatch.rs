@@ -1,7 +1,33 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use gtk4::gio;
 use gtk4::prelude::*;
+
+static ASSOCIATIONS: OnceLock<HashMap<String, String>> = OnceLock::new();
+
+pub fn init() {
+    let mut map = HashMap::new();
+    let config_path = std::env::var("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(std::env::var("HOME").unwrap_or_default()).join(".config")
+        })
+        .join("purse/associations.conf");
+    if let Ok(content) = std::fs::read_to_string(config_path) {
+        for line in content
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        {
+            if let Some((k, v)) = line.split_once('=') {
+                map.insert(k.trim().to_string(), v.trim().to_string());
+            }
+        }
+    }
+    let _ = ASSOCIATIONS.set(map);
+}
 
 const SELF_DESKTOP_ID: &str = "purse-niri.desktop";
 
@@ -23,9 +49,22 @@ fn open_file_bypass_self(path: &PathBuf) {
     };
     let (content_type, _) = gio::content_type_guess(Some(path), &sniff_data);
 
-    let handler = gio::AppInfo::all_for_type(&content_type)
-        .into_iter()
-        .find(|app| app.id().map(|id| id.as_str() != SELF_DESKTOP_ID).unwrap_or(true));
+    let mut handler = None;
+    if let Some(app_id) = ASSOCIATIONS
+        .get()
+        .and_then(|m| m.get(content_type.as_str()))
+    {
+        handler = gio::DesktopAppInfo::new(app_id).map(|a| a.upcast::<gio::AppInfo>());
+    }
+    let handler = handler.or_else(|| {
+        gio::AppInfo::all_for_type(&content_type)
+            .into_iter()
+            .find(|app| {
+                app.id()
+                    .map(|id| id.as_str() != SELF_DESKTOP_ID)
+                    .unwrap_or(true)
+            })
+    });
 
     if let Some(app) = handler {
         let file = gio::File::for_path(path);
@@ -34,8 +73,6 @@ fn open_file_bypass_self(path: &PathBuf) {
         }
     } else {
         // No other handler known — fall back to xdg-open as last resort
-        let _ = std::process::Command::new("xdg-open")
-            .arg(path)
-            .spawn();
+        let _ = std::process::Command::new("xdg-open").arg(path).spawn();
     }
 }
