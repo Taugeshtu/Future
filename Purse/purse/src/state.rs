@@ -16,6 +16,8 @@ pub struct Item {
     pub mime: String,
     pub preview: PreviewState,
     pub selected: bool,
+    pub line: Option<u32>,
+    pub col: Option<u32>,
 }
 
 pub struct PurseState {

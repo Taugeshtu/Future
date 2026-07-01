@@ -23,14 +23,14 @@ pub fn setup_shortcuts(
         key_ctrl.set_propagation_phase(gtk4::PropagationPhase::Capture);
         key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
             if keyval == gtk4::gdk::Key::Return {
-                let paths: Vec<PathBuf> = state
+                let targets: Vec<(PathBuf, Option<u32>, Option<u32>)> = state
                     .borrow()
                     .items
                     .iter()
                     .filter(|i| i.selected)
-                    .map(|i| i.path.clone())
+                    .map(|i| (i.path.clone(), i.line, i.col))
                     .collect();
-                dispatch::open_files_bypass_self(&paths);
+                dispatch::open_files_bypass_self(&targets);
                 window_for_close.close();
                 return glib::Propagation::Stop;
             }

@@ -17,8 +17,24 @@ pub fn ingest(
     flow_box: &gtk4::FlowBox,
     preview_tx: Sender<PreviewResult>,
 ) {
+    let mut clean_path = path.clone();
+    let (mut line, mut col) = (None, None);
+    let s = path.to_string_lossy();
+    let p: Vec<&str> = s.split(':').collect();
+    if p.len() >= 2 {
+        if let Ok(n1) = p[p.len() - 1].parse::<u32>() {
+            if p.len() >= 3 && p[p.len() - 2].parse::<u32>().is_ok() {
+                line = Some(p[p.len() - 2].parse().unwrap());
+                col = Some(n1);
+                clean_path = PathBuf::from(p[..p.len() - 2].join(":"));
+            } else {
+                line = Some(n1);
+                clean_path = PathBuf::from(p[..p.len() - 1].join(":"));
+            }
+        }
+    }
     // 1. canonicalize
-    let canonical = match std::fs::canonicalize(&path) {
+    let canonical = match std::fs::canonicalize(&clean_path) {
         Ok(p) => p,
         Err(_) => return,
     };
@@ -52,6 +68,8 @@ pub fn ingest(
         mime: mime.clone(),
         preview: PreviewState::Pending,
         selected: true,
+        line,
+        col,
     };
     state.borrow_mut().items.push(item);
 
@@ -64,7 +82,7 @@ pub fn ingest(
     let path_clone = canonical.clone();
     let mime_clone = mime.clone();
     std::thread::spawn(move || {
-        let result = preview::generate(&path_clone, &mime_clone);
+        let result = preview::generate(&path_clone, &mime_clone, line);
         preview_tx.send_blocking(PreviewResult { id, payload: result }).ok();
     });
 }

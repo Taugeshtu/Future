@@ -17,14 +17,14 @@ pub enum PreviewPayload {
     Icon { name: String },
 }
 
-pub fn generate(path: &Path, mime: &str) -> Result<PreviewPayload, ()> {
+pub fn generate(path: &Path, mime: &str, target_line: Option<u32>) -> Result<PreviewPayload, ()> {
     if mime.starts_with("text/")
         || mime.ends_with("toml")
         || mime.ends_with("json")
         || mime.ends_with("xml")
         || mime.ends_with("yaml")
     {
-        generate_text(path)
+        generate_text(path, target_line)
     } else {
         generate_thumbnail(path, mime)
     }
@@ -40,14 +40,22 @@ fn generate_thumbnail(path: &Path, mime: &str) -> Result<PreviewPayload, ()> {
     Err(())
 }
 
-fn generate_text(path: &Path) -> Result<PreviewPayload, ()> {
+fn generate_text(path: &Path, target_line: Option<u32>) -> Result<PreviewPayload, ()> {
     let file = File::open(path).map_err(|_| ())?;
-    let content: String = BufReader::new(file)
-        .lines()
-        .take(20)
-        .filter_map(|l| l.ok())
-        .collect::<Vec<_>>()
-        .join("\n");
+    let lines: Vec<String> = BufReader::new(file).lines().filter_map(|l| l.ok()).collect();
+    let content = if let Some(target) = target_line {
+        let idx = target.saturating_sub(1) as usize;
+        let start = idx.saturating_sub(10);
+        let end = std::cmp::min(idx + 11, lines.len());
+        let mut s = if start > 0 { vec!["...".to_string()] } else { vec![] };
+        for (i, l) in lines.iter().enumerate().skip(start).take(end - start) {
+            s.push(format!("{}{}", if i == idx { "-> " } else { "   " }, l));
+        }
+        if end < lines.len() { s.push("...".to_string()); }
+        s.join("\n")
+    } else {
+        lines.into_iter().take(20).collect::<Vec<_>>().join("\n")
+    };
     Ok(PreviewPayload::Text { content })
 }
 

@@ -31,13 +31,23 @@ pub fn init() {
 
 const SELF_DESKTOP_ID: &str = "purse-niri.desktop";
 
-pub fn open_files_bypass_self(paths: &[PathBuf]) {
-    for path in paths {
-        open_file_bypass_self(path);
+pub fn open_files_bypass_self(targets: &[(PathBuf, Option<u32>, Option<u32>)]) {
+    for (path, line, col) in targets {
+        open_file_bypass_self(path, *line, *col);
     }
 }
 
-fn open_file_bypass_self(path: &PathBuf) {
+fn open_file_bypass_self(path: &PathBuf, line: Option<u32>, col: Option<u32>) {
+    if let Some(l) = line {
+        let editor_cmd = std::env::var("GLUEK_UP_EDITOR_CMD")
+            .unwrap_or_else(|_| "lite-xl".to_string());
+        let arg = match col {
+            Some(c) => format!("{}:{}:{}", path.display(), l, c),
+            None => format!("{}:{}", path.display(), l),
+        };
+        let _ = std::process::Command::new(editor_cmd).arg(arg).spawn();
+        return;
+    }
     // Pass real file bytes so GIO doesn't mistake the file for application/x-zerosize.
     // &[] with length 0 is treated by GLib as "data present but empty" → wrong type.
     let sniff_data: Vec<u8> = {

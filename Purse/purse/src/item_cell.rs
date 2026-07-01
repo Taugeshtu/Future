@@ -7,7 +7,7 @@ use gtk4::prelude::*;
 use sourceview5::prelude::*;
 
 use crate::dispatch;
-use crate::preview::{PreviewPayload, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+use crate::preview::{PreviewPayload, PREVIEW_HEIGHT};
 use crate::state::{ItemId, PurseState};
 
 pub struct ItemCell {
@@ -123,12 +123,12 @@ impl ItemCell {
         {
             let state_click = state.clone();
             let cell_map_click = cell_map.clone();
-            let path_click = path.to_path_buf();
             let root_click = cell.root.clone();
             let click = gtk4::GestureClick::new();
             click.connect_released(move |_, n_press, _, _| {
                 if n_press >= 2 {
-                    dispatch::open_files_bypass_self(&[path_click.clone()]);
+                    let item = &state_click.borrow().items[id];
+                    dispatch::open_files_bypass_self(&[(item.path.clone(), item.line, item.col)]);
                 } else {
                     state_click.borrow_mut().items[id].selected = false;
                     cell_map_click.borrow_mut().remove(&id);
