@@ -164,19 +164,21 @@ impl ItemCell {
                 }
                 buffer.set_text(content);
                 self.stack.set_visible_child_name("text");
+                self.label.set_visible(false);
             }
             PreviewPayload::Image(path) => {
                 let file = gtk4::gio::File::for_path(path);
                 self.picture.set_file(Some(&file));
                 self.stack.set_visible_child_name("image");
+                self.label.set_visible(false);
             }
             PreviewPayload::Icon { name } => {
                 self.icon.set_icon_name(Some(name));
                 self.stack.set_visible_child_name("icon");
+                self.label.set_visible(true);
             }
         }
         self.spinner.stop();
-        self.label.set_visible(false);
     }
 
 }

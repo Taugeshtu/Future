@@ -18,7 +18,12 @@ pub enum PreviewPayload {
 }
 
 pub fn generate(path: &Path, mime: &str) -> Result<PreviewPayload, ()> {
-    if mime.starts_with("text/") {
+    if mime.starts_with("text/")
+        || mime.ends_with("toml")
+        || mime.ends_with("json")
+        || mime.ends_with("xml")
+        || mime.ends_with("yaml")
+    {
         generate_text(path)
     } else {
         generate_thumbnail(path, mime)
