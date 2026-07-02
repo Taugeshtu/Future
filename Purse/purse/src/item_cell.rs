@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use gtk4::prelude::*;
@@ -12,7 +12,7 @@ use crate::state::{ItemId, PurseState};
 
 pub struct ItemCell {
     pub id: ItemId,
-    path: PathBuf,
+    path: Option<PathBuf>,
     root: gtk4::Box,
     stack: gtk4::Stack,
     text_view: sourceview5::View,
@@ -25,13 +25,19 @@ pub struct ItemCell {
 impl ItemCell {
     pub fn new(
         id: ItemId,
-        path: &Path,
         state: Rc<RefCell<PurseState>>,
         cell_map: Rc<RefCell<HashMap<ItemId, ItemCell>>>,
     ) -> Self {
+        let kind = {
+            let s = state.borrow();
+            s.items[id].kind.clone()
+        };
+
         // --- preview widgets ---
         let spinner = gtk4::Spinner::new();
-        spinner.start();
+        if let crate::state::ItemKind::File { .. } = &kind {
+            spinner.start();
+        }
 
         let text_view = sourceview5::View::new();
         text_view.set_editable(false);
@@ -65,15 +71,32 @@ impl ItemCell {
         stack.add_named(&text_scroll, Some("text"));
         stack.add_named(&picture, Some("image"));
         stack.add_named(&icon, Some("icon"));
-        stack.set_visible_child_name("pending");
+
+        let (initial_stack_child, path_field) = match &kind {
+            crate::state::ItemKind::File { path, .. } => {
+                ("pending", Some(path.clone()))
+            }
+            crate::state::ItemKind::Transient { content, .. } => {
+                let buffer = text_view.buffer();
+                buffer.set_text(content);
+                ("text", None)
+            }
+        };
+        stack.set_visible_child_name(initial_stack_child);
         stack.set_size_request(-1, PREVIEW_HEIGHT);
         stack.set_hexpand(true);
         stack.set_vexpand(false);
 
         // --- filename label ---
-        let label = gtk4::Label::new(
-            path.file_name().and_then(|n| n.to_str()),
-        );
+        let display_label = match &kind {
+            crate::state::ItemKind::File { path, .. } => {
+                path.file_name().and_then(|n| n.to_str()).map(|s| s.to_string())
+            }
+            crate::state::ItemKind::Transient { label, .. } => {
+                Some(label.clone())
+            }
+        };
+        let label = gtk4::Label::new(display_label.as_deref());
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         label.set_max_width_chars(1); // let the container control width
         label.set_hexpand(true);
@@ -88,7 +111,7 @@ impl ItemCell {
 
         let cell = ItemCell {
             id,
-            path: path.to_path_buf(),
+            path: path_field,
             root,
             stack,
             text_view,
@@ -128,7 +151,9 @@ impl ItemCell {
             click.connect_released(move |_, n_press, _, _| {
                 if n_press >= 2 {
                     let item = &state_click.borrow().items[id];
-                    dispatch::open_files_bypass_self(&[(item.path.clone(), item.line, item.col)]);
+                    if let crate::state::ItemKind::File { path, line, col, .. } = &item.kind {
+                        dispatch::open_files_bypass_self(&[(path.clone(), *line, *col)]);
+                    }
                 } else {
                     state_click.borrow_mut().items[id].selected = false;
                     cell_map_click.borrow_mut().remove(&id);
@@ -153,14 +178,16 @@ impl ItemCell {
                 let buffer = self.text_view.buffer();
                 // language detection on the main thread
                 let lang_mgr = sourceview5::LanguageManager::default();
-                if let Some(lang) = lang_mgr.guess_language(
-                    Some(self.path.to_str().unwrap_or("")),
-                    None,
-                ) {
-                    buffer
-                        .downcast_ref::<sourceview5::Buffer>()
-                        .unwrap()
-                        .set_language(Some(&lang));
+                if let Some(path) = &self.path {
+                    if let Some(lang) = lang_mgr.guess_language(
+                        Some(path.to_str().unwrap_or("")),
+                        None,
+                    ) {
+                        buffer
+                            .downcast_ref::<sourceview5::Buffer>()
+                            .unwrap()
+                            .set_language(Some(&lang));
+                    }
                 }
                 buffer.set_text(content);
                 self.stack.set_visible_child_name("text");
@@ -181,4 +208,10 @@ impl ItemCell {
         self.spinner.stop();
     }
 
+    pub fn update_transient(&self, label: &str, content: &str) {
+        self.label.set_text(label);
+        let buffer = self.text_view.buffer();
+        buffer.set_text(content);
+        self.stack.set_visible_child_name("text");
+    }
 }

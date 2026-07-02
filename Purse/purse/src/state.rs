@@ -10,14 +10,26 @@ pub enum PreviewState {
     Failed,
 }
 
+#[derive(Clone, Debug)]
+pub enum ItemKind {
+    File {
+        path: PathBuf,
+        mime: String,
+        line: Option<u32>,
+        col: Option<u32>,
+    },
+    Transient {
+        uuid: String,
+        label: String,
+        content: String,
+    },
+}
+
 pub struct Item {
     pub id: ItemId,
-    pub path: PathBuf,
-    pub mime: String,
     pub preview: PreviewState,
     pub selected: bool,
-    pub line: Option<u32>,
-    pub col: Option<u32>,
+    pub kind: ItemKind,
 }
 
 pub struct PurseState {

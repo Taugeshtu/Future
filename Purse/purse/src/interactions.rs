@@ -28,7 +28,12 @@ pub fn setup_shortcuts(
                     .items
                     .iter()
                     .filter(|i| i.selected)
-                    .map(|i| (i.path.clone(), i.line, i.col))
+                    .filter_map(|i| match &i.kind {
+                        crate::state::ItemKind::File { path, line, col, .. } => {
+                            Some((path.clone(), *line, *col))
+                        }
+                        _ => None,
+                    })
                     .collect();
                 dispatch::open_files_bypass_self(&targets);
                 window_for_close.close();
@@ -57,17 +62,22 @@ pub fn setup_shortcuts(
     {
         let state = state.clone();
         let action = gtk4::CallbackAction::new(move |widget, _| {
-            let hovered_path = {
+            let hovered_content = {
                 let s = state.borrow();
                 s.hover
                     .and_then(|id| s.items.get(id))
-                    .map(|i| i.path.clone())
+                    .and_then(|i| match &i.kind {
+                        crate::state::ItemKind::File { path, .. } => {
+                            std::fs::read_to_string(path).ok()
+                        }
+                        crate::state::ItemKind::Transient { content, .. } => {
+                            Some(content.clone())
+                        }
+                    })
             };
-            if let Some(path) = hovered_path {
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Some(display) = gtk4::gdk::Display::default() {
-                        display.clipboard().set_text(&content);
-                    }
+            if let Some(content) = hovered_content {
+                if let Some(display) = gtk4::gdk::Display::default() {
+                    display.clipboard().set_text(&content);
                 }
             }
             // get the widget's display for clipboard — use the widget parameter

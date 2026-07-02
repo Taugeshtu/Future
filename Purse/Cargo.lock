@@ -884,6 +884,8 @@ dependencies = [
  "glib",
  "gtk4",
  "md5",
+ "serde",
+ "serde_json",
  "sourceview5",
  "zbus",
 ]

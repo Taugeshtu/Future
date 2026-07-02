@@ -46,7 +46,7 @@ fn main() {
 
 fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
     // --- channels ---
-    let (ipc_tx, ipc_rx) = async_channel::unbounded::<PathBuf>();
+    let (ipc_tx, ipc_rx) = async_channel::unbounded::<ipc::IpcMessage>();
     let (preview_tx, preview_rx) = async_channel::unbounded::<state::PreviewResult>();
 
     // --- shared state ---
@@ -68,15 +68,15 @@ fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
     vbox.append(&flow_box);
     window.set_child(Some(&vbox));
 
-    // --- IPC rx: feed paths into ingestion ---
+    // --- IPC rx: feed messages into ingestion ---
     glib::MainContext::default().spawn_local({
         let state = state.clone();
         let cell_map = cell_map.clone();
         let flow_box = flow_box.clone();
         let preview_tx = preview_tx.clone();
         async move {
-            while let Ok(path) = ipc_rx.recv().await {
-                ingestion::ingest(path, &state, &cell_map, &flow_box, preview_tx.clone());
+            while let Ok(msg) = ipc_rx.recv().await {
+                ingestion::ingest(msg, &state, &cell_map, &flow_box, preview_tx.clone());
             }
         }
     });
@@ -112,7 +112,7 @@ fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
         let flow_box = flow_box.clone();
         let preview_tx = preview_tx.clone();
         interactions::setup_dnd(&window, move |path| {
-            ingestion::ingest(path, &state, &cell_map, &flow_box, preview_tx.clone());
+            ingestion::ingest(ipc::IpcMessage::File(path), &state, &cell_map, &flow_box, preview_tx.clone());
         });
     }
 
@@ -137,7 +137,7 @@ fn build_window(app: &gtk4::Application, initial_paths: Vec<PathBuf>) {
 
     // --- ingest initial files from argv ---
     for path in initial_paths {
-        ingestion::ingest(path, &state, &cell_map, &flow_box, preview_tx.clone());
+        ingestion::ingest(ipc::IpcMessage::File(path), &state, &cell_map, &flow_box, preview_tx.clone());
     }
 
     window.present();

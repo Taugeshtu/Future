@@ -19,7 +19,19 @@ fi
 PID=$(purse-niri)
 SOCKET="$XDG_RUNTIME_DIR/purse-${PID}.sock"
 
+# Send "Searching..." status
+if [ -S "$SOCKET" ]; then
+    echo '{"uuid": "lsp-defs", "label": "Definition", "content": "Searching..."}' | nc -w 1 -U "$SOCKET" || true
+fi
+
 # 3. Query lsp-broker (blocking)
+if [ ! -S "$XDG_RUNTIME_DIR/lsp-broker-query.sock" ]; then
+    if [ -S "$SOCKET" ]; then
+        echo '{"uuid": "lsp-defs", "label": "Definition", "content": "Language server not running."}' | nc -w 1 -U "$SOCKET" || true
+    fi
+    exit 1
+fi
+
 LSP_LINE=$((LINE - 1))
 LSP_COL=$((COL - 1))
 
@@ -44,6 +56,9 @@ RESPONSE=$(echo -ne "$REQ_PAYLOAD" | nc -w 10 -U "$XDG_RUNTIME_DIR/lsp-broker-qu
 
 if [ -z "$RESPONSE" ]; then
     echo "LSP query failed or timed out" >&2
+    if [ -S "$SOCKET" ]; then
+        echo '{"uuid": "lsp-defs", "label": "Definition", "content": "Query timed out."}' | nc -w 1 -U "$SOCKET" || true
+    fi
     exit 1
 fi
 
@@ -55,6 +70,10 @@ import sys, json, urllib.parse
 try:
     data = json.load(sys.stdin)
 except Exception:
+    sys.exit(0)
+err = data.get("error")
+if err:
+    print(f"ERROR: {err.get(\"message\", \"Unknown error\")}")
     sys.exit(0)
 res = data.get("result")
 if not res:
@@ -71,14 +90,29 @@ for loc in res:
     print(f"{path}:{line}:{col}")
 ' || true)
 
+if [[ "$LOCATIONS" == ERROR:* ]]; then
+    ERR_MSG="${LOCATIONS#ERROR: }"
+    echo "LSP Error: $ERR_MSG" >&2
+    if [ -S "$SOCKET" ]; then
+        echo "{\"uuid\": \"lsp-defs\", \"label\": \"Definition\", \"content\": \"$ERR_MSG\"}" | nc -w 1 -U "$SOCKET" || true
+    fi
+    exit 1
+fi
+
 if [ -z "$LOCATIONS" ]; then
     echo "No definitions found" >&2
+    if [ -S "$SOCKET" ]; then
+        echo '{"uuid": "lsp-defs", "label": "Definition", "content": "No definition found."}' | nc -w 1 -U "$SOCKET" || true
+    fi
     exit 0
 fi
 
 # 5. Catch: check if window socket still exists before sending
 if [ -S "$SOCKET" ]; then
-    echo "$LOCATIONS" | nc -U "$SOCKET"
+    # Clear "Searching..." status
+    echo '{"uuid": "lsp-defs", "label": "", "content": ""}' | nc -w 1 -U "$SOCKET" || true
+    # Send actual file locations
+    echo "$LOCATIONS" | nc -w 1 -U "$SOCKET" || true
 else
     echo "Purse window closed, discarding results" >&2
 fi
