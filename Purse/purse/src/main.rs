@@ -20,6 +20,7 @@ use item_cell::ItemCell;
 use state::{ItemId, PurseState};
 
 fn main() {
+    std::env::set_var("GSK_RENDERER", "cairo");
     dispatch::init();
     let initial_paths: Vec<PathBuf> = std::env::args().skip(1).map(PathBuf::from).collect();
 
