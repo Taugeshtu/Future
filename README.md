@@ -20,10 +20,10 @@ To do Work, you further need to:
 - examine things of interest (to decide on action)
 - take action(s) upon things
 
-To help with this, Future must provide ergonomic containers that users can use to shape their work. Then context is more immediately surfaced: where work is happening, what's in play, and where within it your attention sits - a more noun-oriented model. To compound the noun/verb model, the boundaries of applications should be dissolved.
+To help with this, Future must provide ergonomic handles that users can use to shape their work. Then context is more immediately surfaced: where work is happening, what's in play, and where within it your attention sits - a more noun-oriented model. To compound the noun/verb model, the boundaries of applications should be dissolved.
 
 Future is not a collection of apps. It's not a protocol. It's an idea about how computing should work — expressed through a set of capabilities.
 
 ## How to Future
 
-A Future can be built today, on Linux, from existing and invented tools wired together. The working model: niri as compositor, Thunar as primary noun navigator, Purse as context tray, Lite-XL for reading and editing files, and a launcher to close the noun/verb loop. The seams are visible and held together by scripts — that's fine. The seams reveal exactly what to build next.
+A Future can be built today, on Linux, from existing and invented tools wired together. The working model: niri as compositor, Thunar as primary noun navigator, Purse as context tray and examination utility, Lite-XL for reading and editing files, and a launcher to close the noun/verb loop. The seams are visible and held together by scripts — that's fine. They evidence what's lacking in SOTA.
